@@ -6,8 +6,10 @@ from docx.oxml.text.paragraph import CT_P
 from docx.oxml.table import CT_Tbl
 from docx.table import Table
 from docx.text.paragraph import Paragraph
+from flask_cors import CORS
 
-app = Flask(__name__)
+app = Flask(__name__)  # Create app ONCE
+CORS(app)  # Enable CORS right after
 
 
 def is_instruction_text(text):
