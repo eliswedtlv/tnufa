@@ -18,14 +18,14 @@ def is_instruction_text(text):
     for starter in instruction_starters:
         if text.startswith(starter):
             return True
-    if text.count('[1]') > 0 and text.count('[2]') > 0:
+    if text.count("[1]") > 0 and text.count("[2]") > 0:
         return True
     return False
 
 def extract_from_docx_binary(binary_data):
     docx_bytes = io.BytesIO(binary_data)
     doc = Document(docx_bytes)
-    
+
     json_structure = {
         "executive_summary": {"question": "סיכום מנהלים"},
         "the_need": {"question": "הצורך"},
@@ -39,7 +39,7 @@ def extract_from_docx_binary(binary_data):
         "royalties": {"question": "תמלוגים"},
         "economic_and_technological_contribution": {"question": "התרומה הטכנולוגית והתעסוקתית הצפויה של המיזם לכלכלה הישראלית"}
     }
-    
+
     section_keywords = {
         "executive_summary": ["סיכום מנהלים"],
         "the_need": ["הצורך"],
@@ -53,10 +53,10 @@ def extract_from_docx_binary(binary_data):
         "royalties": ["תמלוגים"],
         "economic_and_technological_contribution": ["תרומה הטכנולוגית", "תרומה התעסוקתית", "תרומה"]
     }
-    
+
     result = {key: {"question": value["question"], "answer": ""} for key, value in json_structure.items()}
     section_content = {key: [] for key in json_structure.keys()}
-    
+
     for element in doc.element.body:
         content_text = None
         if isinstance(element, CT_P):
@@ -74,34 +74,52 @@ def extract_from_docx_binary(binary_data):
                         break
                 if content_text:
                     break
-        
+
         if content_text:
             for section_key, keywords in section_keywords.items():
                 if any(keyword in content_text for keyword in keywords):
                     section_content[section_key].append(content_text)
                     break
-    
+
     for section_key, content_parts in section_content.items():
         if content_parts:
             seen = set()
-            unique_parts = [part for part in content_parts if not (part in seen or seen.add(part))]
+            unique_parts = [
+                part for part in content_parts
+                if not (part in seen or seen.add(part))
+            ]
             result[section_key]["answer"] = "\n\n".join(unique_parts)
-    
+
     return result
 
-@app.route('/extract', methods=['POST'])
+@app.route("/extract", methods=["POST"])
 def extract():
     try:
-        file_data = request.data
+        # prefer multipart form-data file field "file"
+        if "file" in request.files:
+            uploaded_file = request.files["file"]
+            if not uploaded_file.filename:
+                return jsonify({"error": "empty filename"}), 400
+            file_data = uploaded_file.read()
+        else:
+            # fallback to raw body
+            file_data = request.data
+
+        if not file_data:
+            return jsonify({"error": "no data received"}), 400
+
         result = extract_from_docx_binary(file_data)
         return jsonify(result)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route('/', methods=['GET'])
+@app.route("/", methods=["GET"])
 def home():
     return jsonify({"status": "Tnufa Extractor API is running"})
 
-if __name__ == '__main__':
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
+
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
