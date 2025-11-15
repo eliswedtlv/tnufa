@@ -95,7 +95,6 @@ def extract_from_docx_binary(binary_data):
 @app.route("/extract", methods=["POST"])
 def extract():
     try:
-        # file must come as multipart field "file"
         if "file" not in request.files:
             return jsonify({"error": "missing file field"}), 400
 
@@ -103,13 +102,19 @@ def extract():
         if not uploaded_file.filename:
             return jsonify({"error": "empty filename"}), 400
 
-        file_data = uploaded_file.read()
+        content = uploaded_file.read()
 
-        # real parsing
-        result = extract_from_docx_binary(file_data)
-        return jsonify(result)
+        return jsonify({
+            "status": "debug",
+            "filename": uploaded_file.filename,
+            "mimetype": uploaded_file.mimetype,
+            "size_bytes": len(content),
+            "first_bytes": list(content[:8]),
+            "first_chars": content[:8].decode("latin1", errors="replace")
+        })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 
 
