@@ -95,26 +95,28 @@ def extract_from_docx_binary(binary_data):
 @app.route("/extract", methods=["POST"])
 def extract():
     try:
+        info = {
+            "content_type": request.content_type,
+            "content_length": request.content_length,
+            "files_count": len(request.files),
+            "file_keys": list(request.files.keys()),
+            "data_len": len(request.data or b"")
+        }
+
         if "file" in request.files:
-            uploaded_file = request.files["file"]
-            if not uploaded_file.filename:
-                return jsonify({"error": "empty filename"}), 400
-            file_data = uploaded_file.read()
-            source = "request.files"
-        else:
-            file_data = request.data
-            source = "request.data"
+            f = request.files["file"]
+            info["file_field"] = {
+                "filename": f.filename,
+                "mimetype": f.mimetype,
+                "size_bytes": len(f.read())
+            }
+            # reset read pointer for safety
+            f.seek(0)
 
-        if not file_data:
-            return jsonify({"error": "no data received"}), 400
-
-        return jsonify({
-            "status": "ok",
-            "source": source,
-            "bytes": len(file_data)
-        })
+        return jsonify(info)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 @app.route("/", methods=["GET"])
 def home():
