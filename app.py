@@ -1,11 +1,11 @@
-from flask import Flask, request, jsonify
+from flask import Flask, jsonify
 import os
 
 app = Flask(__name__)
 
 @app.route("/", methods=["GET"])
 def home():
-    return jsonify({"status": "Tnufa Extractor API is running"})
+    return jsonify({"status": "Tnufa Extractor API v2"})
 
 @app.route("/extract", methods=["POST"])
 def extract():
